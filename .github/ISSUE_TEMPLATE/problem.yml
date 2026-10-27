@@ -1,0 +1,41 @@
+name: Something went wrong
+description: Factory Pack didn't do what it should, or said something odd.
+labels: [problem]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time. The more of what it said you can paste, the quicker it gets fixed.
+  - type: dropdown
+    id: system
+    attributes:
+      label: Your computer
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Steam Deck or Bazzite
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Factory Pack's version
+      description: From the release you downloaded, or `factory-pack -version`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what it did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: said
+    attributes:
+      label: What it said
+      description: Any message it showed, word for word. The command-line version prints the game's own last lines when the game is what failed.
+      render: text
+  - type: input
+    id: mods
+    attributes:
+      label: Roughly which mods
+      description: The big ones are enough, like "K2 Spaced Out" or "Pyanodons".

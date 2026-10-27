@@ -133,6 +133,9 @@ jobs:
       id-token: write
       attestations: write
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -142,7 +145,14 @@ jobs:
       - uses: actions/attest-build-provenance@v2
         with:
           subject-path: dist/*
+      # Run again for the same tag, once the Mac builds can be signed say, it
+      # puts the new files in place of the old.
       - name: Draft the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "Factory Pack $GITHUB_REF_NAME" --generate-notes
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "Factory Pack $GITHUB_REF_NAME" --notes-file .github/release-notes.md
+          fi
