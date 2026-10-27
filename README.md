@@ -52,7 +52,7 @@ Nothing. The game runs in a folder of its own, made fresh and deleted afterwards
 
 - Under **more**, "keep a copy of what's sent in" keeps everything that goes up, so you can look through it.
 - On the command line, `factory-pack -no-send -keep some-folder` makes everything and sends nothing.
-- Every release is built by GitHub from the code here, by [these workflows](.github/workflows). Each file comes with a build attestation, so `gh attestation verify FactoryPack-Windows.exe --repo DuffleOne/factory-pack` proves a download was built from this repository.
+- Every release is built by GitHub from the code here, by [these workflows](.github/workflows). The Windows and Linux files come with a build attestation, so `gh attestation verify FactoryPack-Windows.exe --repo DuffleOne/factory-pack` proves a download was built from this repository. The Mac ones are built the same way, then signed with my Apple Developer ID and notarised by Apple, which checks them for malware before macOS will open them.
 
 The planner, for its part, treats everything it receives as if a stranger sent it: everything is size-checked, every number in a pack is checked against what a real game could have, and pictures are decoded and kept only as pixels.
 
@@ -96,7 +96,7 @@ go build -tags production .          # the app, on macOS or Windows
 go build -tags gtk3,production .     # the app, on Linux, with libgtk-3-dev and libwebkit2gtk-4.1-dev
 ```
 
-`go test ./...` at the top runs the tests.
+`go test ./...` at the top runs the tests. A tag like `v1.2.3` has GitHub build every download and draft a release; `scripts/sign-mac.sh v1.2.3`, on a Mac with a Developer ID certificate, then signs and notarises the Mac ones before it's published.
 
 <details>
 <summary>How it fits together</summary>

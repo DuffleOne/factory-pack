@@ -4,10 +4,12 @@ name: release
 # hand, it builds everything and keeps it as the run's artifacts, which is
 # how to try a change to the builds without releasing anything.
 #
-# The Mac builds are signed and notarised when the MACOS_CERT_P12,
-# MACOS_CERT_PASSWORD, APPLE_ID, APPLE_APP_PASSWORD and APPLE_TEAM_ID
-# secrets are set. Without them they're signed for this machine only, and
-# macOS won't open them from a download.
+# The Mac builds come out signed for the machine that built them only, which
+# macOS won't open from a download. scripts/sign-mac.sh, run on a Mac with a
+# Developer ID certificate, signs and notarises them and puts them back on
+# the draft, which is how releases are made. Set the MACOS_CERT_P12,
+# MACOS_CERT_PASSWORD, APPLE_ID, APPLE_APP_PASSWORD and APPLE_TEAM_ID secrets
+# instead and they're signed and notarised here.
 
 on:
   push:
