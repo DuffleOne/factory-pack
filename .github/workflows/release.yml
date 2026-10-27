@@ -52,6 +52,25 @@ jobs:
           name: linux-windows
           path: dist/*
 
+  # The Linux app with GTK and WebKitGTK inside, for desktops that haven't
+  # got them, SteamOS and Bazzite among them. Built on the oldest Ubuntu it
+  # supports, as an AppImage only starts on a glibc as new as the one it was
+  # built on.
+  appimage:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+      - name: AppImage
+        run: VERSION=${VERSION#v} bash app/build/linux/appimage.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appimage
+          path: dist/FactoryPack-Linux.AppImage
+
   macos:
     runs-on: macos-latest
     env:
@@ -126,7 +145,7 @@ jobs:
 
   publish:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [linux-windows, macos]
+    needs: [linux-windows, macos, appimage]
     runs-on: ubuntu-24.04
     permissions:
       contents: write

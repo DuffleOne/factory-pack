@@ -66,6 +66,8 @@ The planner, for its part, treats everything it receives as if a stranger sent i
 
 **I'm on a Steam Deck.** Switch to desktop mode (hold the power button, **Switch to Desktop**), download the AppImage in a browser, and open it from the file manager.
 
+**The AppImage won't start.** AppImages need FUSE, which Steam Decks, Bazzite and most desktops already have. Where it's missing, run it from a terminal as `./FactoryPack-Linux.AppImage --appimage-extract-and-run`.
+
 **Can I make a pack of a multiplayer server's mods?** Yes. Ask whoever runs the server for its `mod-list.json` and `mod-settings.dat`. Press **from a mod-list.json** to tick the mods it uses, and under **more** set the mod settings to that file. You'll need those mods in your own mods folder, which you will if you play there.
 
 **Something went wrong.** [Open an issue](https://github.com/DuffleOne/factory-pack/issues/new) with what it said. The command-line version prints the game's own last words when the game is what failed.
