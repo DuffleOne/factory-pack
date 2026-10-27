@@ -5,3 +5,7 @@
 /app/factory-pack-app
 /dist/
 /out/
+
+# Signing: whoever's own, never the repo's.
+/.envrc
+*.p8

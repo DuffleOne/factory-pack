@@ -6,16 +6,18 @@
 #
 #   scripts/sign-mac.sh v0.1.0
 #
-# It needs Xcode, or its command line tools, and gh logged in. The first time,
-# it asks for your Apple ID and an app-specific password for notarising, and
-# keeps them in the keychain.
+# It needs Xcode, or its command line tools, and gh logged in. Notarising
+# uses an App Store Connect API key when APPLE_API_KEY, APPLE_API_KEY_ID and
+# APPLE_API_ISSUER are set, as .envrc.example shows. Otherwise it uses the
+# keychain profile NOTARY_PROFILE, factory-pack unless you say, and asks for
+# an Apple ID and app-specific password to make it the first time.
 set -euo pipefail
 
 tag="${1:?say which release, as in: scripts/sign-mac.sh v0.1.0}"
 repo=DuffleOne/factory-pack
 profile="${NOTARY_PROFILE:-factory-pack}"
 
-identity=$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+identity="${MAC_SIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Developer ID Application/ {print $2; exit}')}"
 if [ -z "$identity" ]; then
   echo "there's no Developer ID Application certificate in your keychain."
   echo "Xcode makes one: Settings, Accounts, your team, Manage Certificates, then + and Developer ID Application."
@@ -24,11 +26,25 @@ fi
 
 echo "signing as $identity"
 
-if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; then
-  echo
-  echo "notarising needs your Apple ID and an app-specific password, from account.apple.com,"
-  echo "under Sign-In and Security. they're kept in your keychain as \"$profile\", so this is once only."
-  xcrun notarytool store-credentials "$profile"
+if [ -n "${APPLE_API_KEY_ID:-}" ]; then
+  if [ ! -f "${APPLE_API_KEY:-}" ]; then
+    echo "APPLE_API_KEY says the key is at ${APPLE_API_KEY:-nowhere}, and there's nothing there."
+    exit 1
+  fi
+  if [ -z "${APPLE_API_ISSUER:-}" ]; then
+    echo "APPLE_API_ISSUER is empty: it's the Issuer ID at the top of App Store Connect's Integrations page."
+    exit 1
+  fi
+  auth=(--key "$APPLE_API_KEY" --key-id "$APPLE_API_KEY_ID" --issuer "$APPLE_API_ISSUER")
+  echo "notarising with API key $APPLE_API_KEY_ID"
+else
+  if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; then
+    echo
+    echo "notarising needs your Apple ID and an app-specific password, from account.apple.com,"
+    echo "under Sign-In and Security. they're kept in your keychain as \"$profile\", so this is once only."
+    xcrun notarytool store-credentials "$profile"
+  fi
+  auth=(--keychain-profile "$profile")
 fi
 
 work=$(mktemp -d)
@@ -50,11 +66,11 @@ codesign --verify --strict --deep "app/Factory Pack.app"
 notarise() {
   echo "notarising $(basename "$1"): Apple usually answers in a minute or two"
   ditto -c -k --keepParent "$1" upload.zip
-  out=$(xcrun notarytool submit upload.zip --keychain-profile "$profile" --wait 2>&1) || true
+  out=$(xcrun notarytool submit upload.zip "${auth[@]}" --wait 2>&1) || true
   echo "$out" | sed 's/^/  /'
   rm upload.zip
   if ! echo "$out" | grep -q "status: Accepted"; then
-    echo "Apple didn't accept it: \`xcrun notarytool log <id> --keychain-profile $profile\` says why"
+    echo "Apple didn't accept it: xcrun notarytool log, with the id above and the same key or profile, says why"
     exit 1
   fi
 }

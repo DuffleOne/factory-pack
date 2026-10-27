@@ -1,0 +1,14 @@
+# For scripts/sign-mac.sh. Copy this to .envrc, fill it in, and `direnv allow`.
+# .envrc is ignored by git, so what you put in it stays on your Mac.
+
+# The App Store Connect API key notarytool uses: a team key with the
+# Developer role, from Users and Access, Integrations. The Key ID is in its
+# row and the Issuer ID at the top of the page. Keep the .p8 outside the
+# repo: Apple only lets you download it once.
+export APPLE_API_KEY_ID=
+export APPLE_API_ISSUER=
+export APPLE_API_KEY="$HOME/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY_ID}.p8"
+
+# The certificate to sign with, if there's more than one Developer ID
+# Application certificate in your keychain. Left empty, the first.
+# export MAC_SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"

@@ -96,7 +96,7 @@ go build -tags production .          # the app, on macOS or Windows
 go build -tags gtk3,production .     # the app, on Linux, with libgtk-3-dev and libwebkit2gtk-4.1-dev
 ```
 
-`go test ./...` at the top runs the tests. A tag like `v1.2.3` has GitHub build every download and draft a release; `scripts/sign-mac.sh v1.2.3`, on a Mac with a Developer ID certificate, then signs and notarises the Mac ones before it's published.
+`go test ./...` at the top runs the tests. A tag like `v1.2.3` has GitHub build every download and draft a release; `scripts/sign-mac.sh v1.2.3`, on a Mac with a Developer ID certificate, then signs and notarises the Mac ones before it's published; `.envrc.example` shows the App Store Connect API key it can notarise with.
 
 <details>
 <summary>How it fits together</summary>
