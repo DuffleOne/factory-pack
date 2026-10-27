@@ -204,3 +204,26 @@ func TestRequired(t *testing.T) {
 		}
 	}
 }
+
+func TestGameEnv(t *testing.T) {
+	plain := []string{"HOME=/home/me", "PATH=/usr/bin"}
+	if got := gameEnv(plain); !slices.Equal(got, plain) {
+		t.Errorf("outside the AppImage: %v", got)
+	}
+	// Inside it, what its way in changed goes back to what it was, and what
+	// it set that wasn't set before goes.
+	in := []string{
+		"HOME=/home/me",
+		"LD_LIBRARY_PATH=/tmp/.mount/usr/lib",
+		"FP_ORIG_PATH=/usr/bin",
+		"PATH=/tmp/.mount/usr/bin:/usr/bin",
+		"FP_UNSET_LD_LIBRARY_PATH=1",
+		"GTK_PATH=/tmp/.mount/usr/lib/gtk-3.0",
+		"FP_ORIG_GTK_PATH=",
+	}
+
+	want := []string{"GTK_PATH=", "HOME=/home/me", "PATH=/usr/bin"}
+	if got := gameEnv(in); !slices.Equal(got, want) {
+		t.Errorf("got %v\nwant %v", got, want)
+	}
+}

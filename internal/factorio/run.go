@@ -229,6 +229,7 @@ func (in *Install) Run(ctx context.Context, s *Scratch, args ...string) (string,
 
 	cmd := exec.CommandContext(ctx, in.Binary, full...)
 	cmd.Dir = s.Dir
+	cmd.Env = gameEnv(os.Environ())
 	// Once it's been stopped, don't wait long on anything it left holding
 	// its output open.
 	cmd.WaitDelay = 10 * time.Second
@@ -245,6 +246,49 @@ func (in *Install) Run(ctx context.Context, s *Scratch, args ...string) (string,
 	}
 
 	return out, nil
+}
+
+// gameEnv is the environment the game runs in: the tool's own, unless the
+// tool is the AppImage, whose way in points libraries and GTK at what it
+// carries. The game gets what the AppImage was started with instead: the
+// way in keeps each of those as FP_ORIG_NAME, or FP_UNSET_NAME for one that
+// wasn't set, so the game loads the system's libraries, not the tool's.
+func gameEnv(env []string) []string {
+	var (
+		out  []string
+		orig = map[string]string{}
+		gone = map[string]bool{}
+	)
+
+	for _, kv := range env {
+		k, v, _ := strings.Cut(kv, "=")
+		if name, ok := strings.CutPrefix(k, "FP_ORIG_"); ok {
+			orig[name] = v
+		} else if name, ok := strings.CutPrefix(k, "FP_UNSET_"); ok {
+			gone[name] = true
+		}
+	}
+
+	if len(orig) == 0 && len(gone) == 0 {
+		return env
+	}
+
+	for _, kv := range env {
+		k, _, _ := strings.Cut(kv, "=")
+		if _, ok := orig[k]; ok || gone[k] || strings.HasPrefix(k, "FP_ORIG_") || strings.HasPrefix(k, "FP_UNSET_") {
+			continue
+		}
+
+		out = append(out, kv)
+	}
+
+	for k, v := range orig {
+		out = append(out, k+"="+v)
+	}
+
+	slices.Sort(out)
+
+	return out
 }
 
 // Tail is the last n lines of s.

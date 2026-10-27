@@ -234,6 +234,7 @@ func identify(bin string) (version string, headless bool) {
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, bin, "--version")
+	cmd.Env = gameEnv(os.Environ())
 	hide(cmd)
 
 	out, err := cmd.Output()
