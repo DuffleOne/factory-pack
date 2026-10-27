@@ -186,13 +186,17 @@ func TestScratch(t *testing.T) {
 
 func TestRequired(t *testing.T) {
 	for dep, want := range map[string]string{
-		"base >= 2.0":     "base",
-		"~ lib":           "lib",
-		"mod-name":        "mod-name",
-		"? optional":      "",
-		"! incompatible":  "",
-		"(?) hidden":      "",
-		"  spaced  >  1 ": "spaced",
+		"base >= 2.0":          "base",
+		"~ lib":                "lib",
+		"mod-name":             "mod-name",
+		"? optional":           "",
+		"! incompatible":       "",
+		"(?) hidden":           "",
+		"  spaced  >  1 ":      "spaced",
+		"Flare Stack":          "Flare Stack",
+		"Flare Stack >= 4.1.0": "Flare Stack",
+		"~ Flow Control":       "Flow Control",
+		"? Flare Stack":        "",
 	} {
 		name, ok := required(dep)
 		if want == "" && ok || want != "" && name != want {

@@ -74,7 +74,7 @@ func (s *Service) Look(c config.Config) State {
 	picked, err := factorio.Pick(all, names, !c.Exact)
 	if err != nil {
 		st.Problem = err.Error()
-		picked, _ = factorio.Pick(all, nil, false)
+		picked, _ = factorio.Pick(all, names, false)
 	}
 
 	for _, m := range picked {

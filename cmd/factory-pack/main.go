@@ -212,7 +212,10 @@ func show(c *config.Config) error {
 
 	picked, err := factorio.Pick(all, names, !c.Exact)
 	if err != nil {
-		fmt.Println("those mods won't load together:", err)
+		// Still tick what was asked for, so the list says what's wrong
+		// with it rather than nothing at all.
+		fmt.Printf("those mods won't load together: %v\n\n", err)
+		picked, _ = factorio.Pick(all, names, false)
 	}
 
 	on := map[string]bool{}

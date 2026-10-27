@@ -19,8 +19,10 @@ import (
 // are a few megabytes.
 const MaxPicture = 32 << 20
 
-// gamePath is how prototypes name a file: "__mod__/graphics/thing.png".
-var gamePath = regexp.MustCompile(`^__([A-Za-z0-9_-]+)__/(.+)$`)
+// gamePath is how prototypes name a file: "__mod__/graphics/thing.png". A
+// mod's name can have spaces in it, as "Flare Stack" does. Whatever it is,
+// it has to be one of the mods picked before anything is read.
+var gamePath = regexp.MustCompile(`^__([A-Za-z0-9_. -]+)__/(.+)$`)
 
 var pngSignature = []byte("\x89PNG\r\n\x1a\n")
 

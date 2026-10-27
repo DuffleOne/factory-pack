@@ -47,6 +47,7 @@ func game(t *testing.T) (*factorio.Install, []factorio.Mod) {
 	write(t, filepath.Join(in.Data, "core", "graphics", "cursor.png"), png)
 	write(t, filepath.Join(in.User, "player-data.json"), []byte(`{"service-token":"secret"}`))
 	write(t, filepath.Join(in.User, "mods", "folder-mod", "graphics", "a.png"), png)
+	write(t, filepath.Join(in.User, "mods", "Flare Stack_4.1.1", "graphics", "flare.png"), png)
 
 	zipPath := filepath.Join(in.User, "mods", "zipped_1.2.3.zip")
 
@@ -72,6 +73,7 @@ func game(t *testing.T) (*factorio.Install, []factorio.Mod) {
 		{Name: "base", Builtin: true},
 		{Name: "folder-mod", Path: filepath.Join(in.User, "mods", "folder-mod")},
 		{Name: "zipped", Path: zipPath},
+		{Name: "Flare Stack", Path: filepath.Join(in.User, "mods", "Flare Stack_4.1.1")},
 	}
 
 	return in, mods
@@ -88,6 +90,7 @@ func TestPicturesReadsOnlyGamePictures(t *testing.T) {
 		"__core__/graphics/cursor.png",
 		"__folder-mod__/graphics/a.png",
 		"__zipped__/graphics/b.png",
+		"__Flare Stack__/graphics/flare.png",
 	} {
 		if b, err := p.Read(ok); err != nil || !bytes.Equal(b, png) {
 			t.Errorf("%s: %v", ok, err)
@@ -106,6 +109,8 @@ func TestPicturesReadsOnlyGamePictures(t *testing.T) {
 		"__base__/C:/Windows/x.png",
 		"/etc/passwd.png",
 		"__not-picked__/graphics/a.png",
+		"__..__/x.png",
+		"__ __/x.png",
 		"__base__/graphics/icons/iron-plate.png\x00.png",
 		"player-data.json",
 	} {

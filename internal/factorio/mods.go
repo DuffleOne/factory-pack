@@ -272,13 +272,14 @@ func required(dep string) (string, bool) {
 	case strings.HasPrefix(dep, "~"):
 		dep = strings.TrimSpace(dep[1:])
 	}
-	// The name runs to the comparison, if there is one. Names have no
-	// spaces in them, but may have the comparison's characters in them only
-	// after a space.
-	name := dep
-	if i := strings.IndexAny(dep, " <>="); i >= 0 {
-		name = dep[:i]
+	// The name runs to the comparison, if there is one. A name can have
+	// spaces in it, as "Flare Stack" does, but never a comparison's
+	// characters.
+	if i := strings.IndexAny(dep, "<>="); i >= 0 {
+		dep = dep[:i]
 	}
+
+	name := strings.TrimSpace(dep)
 
 	return name, name != ""
 }
