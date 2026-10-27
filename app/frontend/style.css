@@ -1,0 +1,265 @@
+:root {
+  color-scheme: light dark;
+  --bg: #fafaf9;
+  --surface: #f0efed;
+  --line: #dddbd7;
+  --ink: #1c1c1a;
+  --muted: #6b6a66;
+  --accent: #1f2a37;
+  --on-accent: #ffffff;
+  --danger: #b42318;
+  --radius: 10px;
+  font: 400 14px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161615;
+    --surface: #222220;
+    --line: #34332f;
+    --ink: #ecebe8;
+    --muted: #9b9994;
+    --accent: #e8e6e1;
+    --on-accent: #161615;
+    --danger: #f97066;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Sections and rows say how they're laid out, which would otherwise beat
+   the hidden attribute's hiding them. */
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 24px 40px;
+}
+
+h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+.lede,
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.found {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.found.bad,
+.problem {
+  color: var(--danger);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+details > summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+details[open] > summary {
+  margin-bottom: 10px;
+}
+
+.fields {
+  display: grid;
+  gap: 6px;
+}
+
+.fields label,
+.fields .label {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pick {
+  display: flex;
+  gap: 8px;
+}
+
+.pick input {
+  flex: 1;
+  min-width: 0;
+}
+
+input:not([type="checkbox"], [type="radio"]) {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+button {
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: var(--surface);
+}
+
+button:disabled,
+input:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 500;
+}
+
+button.primary:hover:not(:disabled) {
+  background: var(--accent);
+  opacity: 0.9;
+}
+
+.tools input[type="search"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.mods {
+  max-height: 300px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  list-style: none;
+}
+
+.mods label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mods label:hover {
+  background: var(--surface);
+}
+
+.mods .name {
+  overflow-wrap: anywhere;
+}
+
+.mods .muted {
+  margin-left: auto;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.go {
+  display: flex;
+  gap: 8px;
+}
+
+.go button {
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.steps li:last-child {
+  color: var(--ink);
+}
+
+.done {
+  padding: 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.code {
+  font-size: 40px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  user-select: all;
+}

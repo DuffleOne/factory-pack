@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # The tool itself: the command line and everything the app shares with it.
+  core:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Formatted
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+      - name: Builds for every system
+        run: |
+          for os in linux windows darwin; do
+            CGO_ENABLED=0 GOOS=$os GOARCH=amd64 go build -o /dev/null ./cmd/factory-pack
+          done
+
+  # The window, built on each system it's for.
+  app:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            tags: gtk3,production
+          - os: macos-latest
+            tags: production
+          - os: windows-latest
+            tags: production
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+      - name: GTK and WebKitGTK
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - run: go vet -tags ${{ matrix.tags }} .
+      - run: go build -tags ${{ matrix.tags }} .

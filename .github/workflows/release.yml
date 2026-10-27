@@ -1,0 +1,134 @@
+name: release
+
+# A tag like v1.2.3 makes a draft release with everything built from it.
+# The Mac builds are signed and notarised when the MACOS_CERT_P12,
+# MACOS_CERT_PASSWORD, APPLE_ID, APPLE_APP_PASSWORD and APPLE_TEAM_ID
+# secrets are set, and left unsigned when they aren't.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # Linux and Windows both build here: the Windows app needs no cgo.
+  linux-windows:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+      - run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Build
+        run: |
+          V=${GITHUB_REF_NAME#v}
+          FLAGS="-s -w -X main.version=$V"
+          mkdir -p dist out
+          for arch in amd64 arm64; do
+            mkdir -p out/cli-linux-$arch
+            CGO_ENABLED=0 GOOS=linux GOARCH=$arch go build -trimpath -ldflags "$FLAGS" -o out/cli-linux-$arch/factory-pack ./cmd/factory-pack
+            cp README.md LICENSE out/cli-linux-$arch/
+            tar -C out/cli-linux-$arch -czf dist/factory-pack-linux-$arch.tar.gz .
+          done
+          mkdir -p out/cli-windows out/app-linux out/app-windows
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "$FLAGS" -o out/cli-windows/factory-pack.exe ./cmd/factory-pack
+          (cd app && go build -trimpath -tags gtk3,production -ldflags "$FLAGS" -o "../out/app-linux/factory-pack-app" .)
+          (cd app && GOOS=windows GOARCH=amd64 go build -trimpath -tags production -ldflags "$FLAGS -H windowsgui" -o "../out/app-windows/Factory Pack.exe" .)
+          for d in cli-windows app-linux app-windows; do cp README.md LICENSE out/$d/; done
+          (cd out/cli-windows && zip -qr ../../dist/factory-pack-windows.zip .)
+          (cd out/app-windows && zip -qr ../../dist/FactoryPack-windows.zip .)
+          tar -C out/app-linux -czf dist/FactoryPack-linux.tar.gz .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-windows
+          path: dist/*
+
+  macos:
+    runs-on: macos-latest
+    env:
+      SIGNING: ${{ secrets.MACOS_CERT_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+          cache-dependency-path: app/go.sum
+      - name: Build for Apple silicon and Intel, as one
+        run: |
+          V=${GITHUB_REF_NAME#v}
+          FLAGS="-s -w -X main.version=$V"
+          mkdir -p out/cli "out/Factory Pack.app/Contents/MacOS" "out/Factory Pack.app/Contents/Resources"
+          for arch in arm64 amd64; do
+            CGO_ENABLED=1 GOARCH=$arch go build -trimpath -ldflags "$FLAGS" -o out/factory-pack-$arch ./cmd/factory-pack
+            (cd app && CGO_ENABLED=1 GOARCH=$arch go build -trimpath -tags production -ldflags "$FLAGS" -o ../out/app-$arch .)
+          done
+          lipo -create -output out/cli/factory-pack out/factory-pack-arm64 out/factory-pack-amd64
+          lipo -create -output "out/Factory Pack.app/Contents/MacOS/Factory Pack" out/app-arm64 out/app-amd64
+          sed "s/VERSION/$V/g" app/build/darwin/Info.plist > "out/Factory Pack.app/Contents/Info.plist"
+      - name: Sign and notarise
+        if: env.SIGNING == 'true'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/signing.keychain-db"
+          security create-keychain -p "" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "" "$KEYCHAIN"
+          echo "$MACOS_CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$KEYCHAIN" -P "$MACOS_CERT_PASSWORD" -T /usr/bin/codesign
+          rm "$RUNNER_TEMP/cert.p12"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | grep "Developer ID Application" | head -1 | awk '{print $2}')
+          test -n "$IDENTITY"
+          sign() { codesign --force --options runtime --timestamp --sign "$IDENTITY" "$1"; }
+          sign out/cli/factory-pack
+          sign "out/Factory Pack.app/Contents/MacOS/Factory Pack"
+          sign "out/Factory Pack.app"
+          for target in out/cli/factory-pack "out/Factory Pack.app"; do
+            ditto -c -k --keepParent "$target" "$RUNNER_TEMP/notarise.zip"
+            xcrun notarytool submit "$RUNNER_TEMP/notarise.zip" --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          done
+          # A bare program can't carry its ticket; Gatekeeper looks it up
+          # online the first time instead. An app can.
+          xcrun stapler staple "out/Factory Pack.app"
+      - name: Pack
+        run: |
+          mkdir -p dist
+          cp README.md LICENSE out/cli/
+          (cd out/cli && zip -qr ../../dist/factory-pack-macos.zip .)
+          ditto -c -k --keepParent "out/Factory Pack.app" dist/FactoryPack-macos.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/*
+
+  publish:
+    needs: [linux-windows, macos]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: (cd dist && sha256sum * > SHA256SUMS)
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
+      - name: Draft the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --draft --title "$GITHUB_REF_NAME" --generate-notes
