@@ -69,16 +69,26 @@ func (c *Client) Send(ctx context.Context, export string, pics *Pictures, progre
 		progress = func(Step) {}
 	}
 
-	progress(Step{Stage: "sending what the game wrote"})
-
 	f, err := os.Open(export)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = f.Close() }()
 
+	st, err := f.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	size := st.Size()
+	going := func(n int64) {
+		progress(Step{Key: "export", Stage: "sending what the game wrote", Done: n, Of: size, Bytes: true})
+	}
+
+	going(0)
+
 	var got Pack
-	if err := c.do(ctx, http.MethodPost, "/api/packs", "", "application/gzip", f, &got); err != nil {
+	if err := c.do(ctx, http.MethodPost, "/api/packs", "", "application/gzip", counted(f, going), size, &got); err != nil {
 		return nil, err
 	}
 
@@ -89,14 +99,14 @@ func (c *Client) Send(ctx context.Context, export string, pics *Pictures, progre
 			return nil, err
 		}
 
-		progress(Step{Stage: "asking the planner to build it"})
+		progress(Step{Key: "build", Stage: "the planner is building your pack"})
 
 		body, err := json.Marshal(map[string]any{"missing": sent.Missing})
 		if err != nil {
 			return nil, err
 		}
 
-		if err := c.do(ctx, http.MethodPost, "/api/packs/"+got.Code+"/build", got.Token, "application/json", bytes.NewReader(body), &got); err != nil {
+		if err := c.do(ctx, http.MethodPost, "/api/packs/"+got.Code+"/build", got.Token, "application/json", bytes.NewReader(body), int64(len(body)), &got); err != nil {
 			return nil, err
 		}
 	}
@@ -113,18 +123,28 @@ func (c *Client) Send(ctx context.Context, export string, pics *Pictures, progre
 
 // pictures sends what the planner asked for, a batch at a time. One that
 // can't be read is noted and left out: the pack comes without that picture.
+// How far it's got counts pictures passed over and pictures sent, a batch's
+// worth moving along as its bytes go.
 func (c *Client) pictures(ctx context.Context, sent *Sent, pics *Pictures, progress func(Step), keep func(string, []byte) error) error {
 	batch := sent.Batch
 	if batch <= 0 {
 		batch = 32 << 20
 	}
 
+	total := int64(len(sent.Pack.Pictures))
+
 	var (
 		buf  bytes.Buffer
 		tw   = tar.NewWriter(&buf)
-		in   int
-		done int
+		in   int64
+		done int64
 	)
+
+	tell := func(n int64) {
+		progress(Step{Key: "pictures", Stage: "sending pictures", Done: n, Of: total})
+	}
+
+	tell(0)
 
 	flush := func() error {
 		if in == 0 {
@@ -135,26 +155,30 @@ func (c *Client) pictures(ctx context.Context, sent *Sent, pics *Pictures, progr
 			return err
 		}
 
-		progress(Step{Stage: "sending pictures", Done: done, Of: len(sent.Pack.Pictures)})
+		body, size := buf.Bytes(), int64(buf.Len())
+		going := func(n int64) { tell(done + in*n/max(size, 1)) }
 
 		if err := c.retry(ctx, func() error {
-			return c.do(ctx, http.MethodPost, "/api/packs/"+sent.Code+"/pictures", sent.Token, "application/x-tar", bytes.NewReader(buf.Bytes()), nil)
+			return c.do(ctx, http.MethodPost, "/api/packs/"+sent.Code+"/pictures", sent.Token, "application/x-tar", counted(bytes.NewReader(body), going), size, nil)
 		}); err != nil {
 			return err
 		}
 
+		done += in
 		buf.Reset()
 		tw, in = tar.NewWriter(&buf), 0
+
+		tell(done)
 
 		return nil
 	}
 
 	for _, name := range sent.Pack.Pictures {
-		done++
-
 		b, err := pics.Read(name)
 		if err != nil {
 			sent.Missing[name] = err.Error()
+			done++
+
 			continue
 		}
 
@@ -195,7 +219,7 @@ func (c *Client) wait(ctx context.Context, code string, progress func(Step)) (*P
 
 	for {
 		var p Pack
-		if err := c.do(ctx, http.MethodGet, "/api/packs/"+code, "", "", nil, &p); err != nil {
+		if err := c.do(ctx, http.MethodGet, "/api/packs/"+code, "", "", nil, 0, &p); err != nil {
 			return nil, err
 		}
 
@@ -206,7 +230,7 @@ func (c *Client) wait(ctx context.Context, code string, progress func(Step)) (*P
 			return nil, fmt.Errorf("the planner couldn't build the pack: %s", p.Message)
 		}
 
-		progress(Step{Stage: "the planner is building your pack"})
+		progress(Step{Key: "build", Stage: "the planner is building your pack"})
 
 		select {
 		case <-ctx.Done():
@@ -214,6 +238,29 @@ func (c *Client) wait(ctx context.Context, code string, progress func(Step)) (*P
 		case <-time.After(every):
 		}
 	}
+}
+
+// counter tells how much of a body has gone, every so often and at the
+// end.
+type counter struct {
+	r    io.Reader
+	n    int64
+	last time.Time
+	tell func(n int64)
+}
+
+func counted(r io.Reader, tell func(n int64)) io.Reader { return &counter{r: r, tell: tell} }
+
+func (c *counter) Read(p []byte) (int, error) {
+	k, err := c.r.Read(p)
+	c.n += int64(k)
+
+	if now := time.Now(); err != nil || now.Sub(c.last) >= 150*time.Millisecond {
+		c.last = now
+		c.tell(c.n)
+	}
+
+	return k, err
 }
 
 // retry tries a send again, a few times and further apart each time, when
@@ -247,7 +294,9 @@ type Refusal struct {
 
 func (r *Refusal) Error() string { return r.Message }
 
-func (c *Client) do(ctx context.Context, method, route, token, kind string, body io.Reader, out any) error {
+// do sends a request with a body of size bytes, if it has one, and reads
+// the answer into out.
+func (c *Client) do(ctx context.Context, method, route, token, kind string, body io.Reader, size int64, out any) error {
 	base := strings.TrimRight(c.Server, "/")
 	if base == "" {
 		base = DefaultServer
@@ -261,6 +310,11 @@ func (c *Client) do(ctx context.Context, method, route, token, kind string, body
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
 		return err
+	}
+	// Said up front, so the planner can turn away what's too big before
+	// it all arrives.
+	if body != nil {
+		req.ContentLength = size
 	}
 
 	if kind != "" {

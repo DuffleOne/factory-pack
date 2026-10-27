@@ -75,11 +75,16 @@ type Options struct {
 
 // Step is how far along making or sending a pack has got.
 type Step struct {
+	// Key says which step it is, for a window that lists them: note, dump,
+	// names, fluids, pack, export, pictures and build.
+	Key string `json:"key"`
 	// Stage is a short line on what's happening now.
 	Stage string `json:"stage"`
-	// Done and Of count the parts of the stage, when it has parts.
-	Done int `json:"done,omitempty"`
-	Of   int `json:"of,omitempty"`
+	// Done and Of count the parts of the stage, when it has parts, and
+	// Bytes says they're bytes rather than things.
+	Done  int64 `json:"done,omitempty"`
+	Of    int64 `json:"of,omitempty"`
+	Bytes bool  `json:"bytes,omitempty"`
 }
 
 // Export is a finished export, on disk.
@@ -111,21 +116,21 @@ func Make(ctx context.Context, in *factorio.Install, opt Options, progress func(
 	}
 	defer func() { _ = s.Close() }()
 
-	progress(Step{Stage: "loading your mods in the game for its data", Done: 1, Of: 3})
+	progress(Step{Key: "dump", Stage: "loading your mods in the game for its data", Done: 1, Of: 3})
 
 	dump, err := in.Dump(ctx, s)
 	if err != nil {
 		return nil, err
 	}
 
-	progress(Step{Stage: "loading them again for what everything is called", Done: 2, Of: 3})
+	progress(Step{Key: "names", Stage: "loading them again for what everything is called", Done: 2, Of: 3})
 
 	names, err := in.Names(ctx, s)
 	if err != nil {
 		return nil, err
 	}
 
-	progress(Step{Stage: "and once more for where pipes join each machine", Done: 3, Of: 3})
+	progress(Step{Key: "fluids", Stage: "and once more for where pipes join each machine", Done: 3, Of: 3})
 
 	boxes, err := in.Fluidboxes(ctx, s)
 	if err != nil {
@@ -142,7 +147,7 @@ func Make(ctx context.Context, in *factorio.Install, opt Options, progress func(
 		return nil, err
 	}
 
-	progress(Step{Stage: "packing up what the game wrote"})
+	progress(Step{Key: "pack", Stage: "packing up what the game wrote"})
 
 	parts := []part{{name: "manifest.json", data: manifest}, {name: "data-raw-dump.json", path: dump}}
 	for _, n := range names {

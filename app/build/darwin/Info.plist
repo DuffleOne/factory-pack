@@ -10,6 +10,8 @@
 	<string>one.duffle.factory-pack</string>
 	<key>CFBundleExecutable</key>
 	<string>Factory Pack</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleVersion</key>

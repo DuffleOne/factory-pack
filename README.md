@@ -1,88 +1,113 @@
+<p align="center">
+  <img src="docs/images/banner.jpg" alt="factory pack: your own Factorio, mods and all, packed up for the factory planner" width="100%">
+</p>
+
 # Factory Pack
 
-Factory Pack makes a mod pack for the [factory planner](https://factory.duffle.one) out of your own copy of Factorio. It runs the game, mods and settings and all, has it write out its data, and sends that to the planner for a code. You type the code into the planner's game data menu, under "my own mod pack", and plan with your mods.
+Plan your factory with your own mods. Factory Pack is a small, free, open-source app that reads your copy of Factorio, mods and settings and all, and turns it into a pack for the [factory planner](https://factory.duffle.one). It gives you a code; type it into the planner and you're planning with exactly what's in your game.
 
-It comes as an app with a window, and as `factory-pack` for the command line. Both do the same thing.
+## Download
 
-## What it sends, and what it doesn't
+| Your computer | Get this | Then |
+| --- | --- | --- |
+| **Windows** 10 or 11 | [FactoryPack-Windows.exe](https://github.com/DuffleOne/factory-pack/releases/latest/download/FactoryPack-Windows.exe) | Run it. The app isn't signed, so the first time Windows says it protected your PC: click **More info**, then **Run anyway**. |
+| **macOS** 11 or later, Apple silicon or Intel | [FactoryPack-macOS.zip](https://github.com/DuffleOne/factory-pack/releases/latest/download/FactoryPack-macOS.zip) | Unzip it and open **Factory Pack**. It's signed and notarised by Apple, so it opens like any other app. |
+| **Linux**, Steam Deck, Bazzite | [FactoryPack-Linux.AppImage](https://github.com/DuffleOne/factory-pack/releases/latest/download/FactoryPack-Linux.AppImage) | Allow it to run as a program (right-click it, **Properties**, **Permissions**), then open it. Everything it needs is inside it. |
 
-Nothing of yours leaves your machine, and no mods do either. What goes is what the game writes when asked:
+There's a command-line version for each as well, on [the latest release](https://github.com/DuffleOne/factory-pack/releases/latest), and every release lists a checksum for each file in `SHA256SUMS`.
 
-- `data-raw-dump.json`: every item, recipe and building in your game, with your mods and their settings applied. The game writes it with `--dump-data`.
-- What everything is called, one file per kind of thing, from `--dump-prototype-locale`.
-- Where pipes join each crafting machine, recipe by recipe. A small scenario, [`fluidboxes.lua`](internal/factorio/fluidboxes.lua), has the game work that out and write it down.
-- A manifest: the game's version, the name and version of each mod loaded, and what you called the pack.
-- The pictures the planner asks for, to draw icons and buildings with.
+<p align="center">
+  <img src="docs/images/screens.png" alt="Factory Pack: picking the mods for a pack, and the code it gives back" width="100%">
+</p>
 
-Pictures are the one thing read out of the game's files, so they're held to rules the tool keeps whatever the planner asks for. A picture is a `.png` named by the path a prototype gives it (`__base__/graphics/icons/iron-plate.png`), inside the game's own data folder or inside one of the mods you picked, and its first bytes say PNG. A path that climbs out of its folder, a link, or anything else is refused before a file is opened. So the tool can't be asked for your saves, your settings or your Factorio login, which lives in `player-data.json` and is never read.
+## How it works
 
-The game runs in a folder of its own, made fresh in your temporary folder and deleted afterwards. Its mod folder holds links to the mods you picked and a copy of your `mod-settings.dat`, which is how the game loads your settings. The settings file stays here. Your own mods folder, saves and settings are never written to.
+1. **Open Factory Pack.** It finds Factorio by itself, Steam libraries included, and ticks the mods your game has switched on.
+2. **Press "make my pack".** Untick anything you'd rather leave out first. Your game runs three times in the background to write out its data, which takes a few minutes with a lot of mods.
+3. **Use the code.** You get a code like `K7QM-2X9F`. In the planner, open the game data menu at the top, pick **my own mod pack** and type it in, or press **open the planner with it** and it's done for you.
 
-The planner checks what it gets as if anyone could have sent it: an export is unpacked with limits on every file, and a picture is decoded and kept as the pixels alone.
+A pack lasts 48 hours after it was last used, and planning with it counts as using it. Run Factory Pack again with the same mods and settings and the same code comes back.
 
-To see everything that went, set "keep a copy of everything sent in" (`-keep` on the command line). To look before sending anything, `factory-pack -no-send -keep somewhere` makes the export and stops.
+## Is it safe?
 
-## Getting it
+It never uploads your mods, your saves or any of your own files. What it sends is the data your game writes about itself when asked, and the pictures the planner needs to draw your items and buildings.
 
-From [the releases](https://github.com/DuffleOne/factory-pack/releases/latest):
+**What it sends**
 
-- **Windows**: `FactoryPack-windows.zip`. It isn't signed, so Windows says it protected your PC the first time. Click "More info", then "Run anyway".
-- **macOS**: `FactoryPack-macos.zip`, signed and notarised, for Apple silicon and Intel.
-- **Linux**: `FactoryPack-linux.tar.gz`. The window needs GTK 3 and WebKitGTK 4.1, which most desktops have (`libwebkit2gtk-4.1-0` on Debian and Ubuntu, `webkit2gtk4.1` on Fedora).
-- **Steam Deck and Bazzite**: SteamOS has no WebKitGTK, so use the command-line version, `factory-pack-linux-amd64.tar.gz`, from the desktop's terminal.
+- `data-raw-dump.json`: every item, recipe and building in your game, with your mods and their settings applied. Factorio writes it with `--dump-data`.
+- What everything is called, from `--dump-prototype-locale`.
+- Where pipes join each crafting machine, written by a small scenario, [`fluidboxes.lua`](internal/factorio/fluidboxes.lua), that's easy to read.
+- The name and version of each mod, the game's version, and what you called the pack.
+- The pictures the planner asks for, by name.
 
-Each release lists the SHA-256 of every file in `SHA256SUMS`, and carries a build attestation: `gh attestation verify <file> --repo DuffleOne/factory-pack` checks a download was built here, from this source.
+**What it never touches**
 
-## Using it
+Your saves, your settings, and `player-data.json`, which holds your Factorio login. Pictures are the only thing read from Factorio's files, and the app sends one only if it's a PNG, named the way the game names its pictures, inside the game's own folder or one of the mods you picked. Anything else is refused before the file is even opened, whatever the planner asks for, so nobody can use the app to ask for anything else on your computer.
 
-Open it. It finds Factorio by itself in the usual places, Steam libraries included, and ticks the mods your game has switched on. Untick what you don't want, tick what you do, and press "make my pack". The game runs three times in the background, a minute or two each with a lot of mods, then the pack goes up and the code comes back.
+**What it changes**
 
-The same game, mods and settings always get the same code, so running it again after a pack has gone brings back the same one. A pack lasts 48 hours after it was last used, and opening it or planning with it counts as using it.
+Nothing. The game runs in a folder of its own, made fresh and deleted afterwards. Your mods, mod list and settings are never written to. Your mod settings are copied into that folder so the game loads them, and they're never sent.
 
-To make a pack of the game a multiplayer server runs, ask whoever runs it for its `mod-list.json` and `mod-settings.dat`. "as a mod-list.json has them" ticks the mods its list has on, and "more" takes the settings file. Every mod on the list has to be in your own mods folder, which it will be if you play there.
+**See for yourself**
 
-"more" has the rest: a name for the pack, which mod settings to load (yours, every mod's defaults, or a `mod-settings.dat` from a server), the language things are named in, another planner to send to, where to keep a copy of what's sent, and where the game runs. Whatever's set is kept for next time, in `factory-pack/config.json` in your system's settings folder.
+- Under **more**, "keep a copy of what's sent in" keeps everything that goes up, so you can look through it.
+- On the command line, `factory-pack -no-send -keep some-folder` makes everything and sends nothing.
+- Every release is built by GitHub from the code here, by [these workflows](.github/workflows). Each file comes with a build attestation, so `gh attestation verify FactoryPack-Windows.exe --repo DuffleOne/factory-pack` proves a download was built from this repository.
 
-### On the command line
+The planner, for its part, treats everything it receives as if a stranger sent it: everything is size-checked, every number in a pack is checked against what a real game could have, and pictures are decoded and kept only as pixels.
+
+## Questions
+
+**Does it need my Factorio account?** No. It never reads your login, and the game it runs doesn't sign in to anything.
+
+**Why does Windows warn me about it?** Signing a Windows app costs money every year, and this one is free. The warning only means it isn't signed. The source is all here, and each release has checksums and build attestations if you'd like to check it.
+
+**It can't find my game.** Press **it's somewhere else** and point it at the game: `factorio.exe` on Windows, `factorio.app` on a Mac, `bin/x64/factorio` on Linux. If you unpacked Factorio from a zip rather than installing it, point it at that copy.
+
+**I'm on a Steam Deck.** Switch to desktop mode (hold the power button, **Switch to Desktop**), download the AppImage in a browser, and open it from the file manager.
+
+**Can I make a pack of a multiplayer server's mods?** Yes. Ask whoever runs the server for its `mod-list.json` and `mod-settings.dat`. Press **from a mod-list.json** to tick the mods it uses, and under **more** set the mod settings to that file. You'll need those mods in your own mods folder, which you will if you play there.
+
+**Something went wrong.** [Open an issue](https://github.com/DuffleOne/factory-pack/issues/new) with what it said. The command-line version prints the game's own last words when the game is what failed.
+
+## On the command line
+
+Each release has `factory-pack` for Windows, macOS and Linux. It does everything the app does.
 
 ```
 factory-pack -list
 factory-pack
 factory-pack -mods Krastorio2-spaced-out -settings defaults -name "K2 Spaced Out"
-factory-pack -mod-list ~/server/mod-list.json -settings ~/server/mod-settings.dat -name "our server"
+factory-pack -mod-list server/mod-list.json -settings server/mod-settings.dat -name "our server"
 ```
 
-`factory-pack -h` lists every flag. Each one matches a setting in the app, and `-save` keeps them in the config file. If the game isn't found, `-game` says where its executable is, or `FACTORIO_PATH` does.
+`factory-pack -h` lists every option. `-save` remembers the ones you give for next time, in the same settings file the app uses (`factory-pack/config.json` in your system's settings folder). If the game isn't found, `-game` says where it is, or `FACTORIO_PATH` does.
 
-## How it fits together
+## Building it yourself
+
+You'll need [Go](https://go.dev/dl/) 1.26 or later.
+
+```
+go build ./cmd/factory-pack          # the command line, for anywhere
+cd app
+go build -tags production .          # the app, on macOS or Windows
+go build -tags gtk3,production .     # the app, on Linux, with libgtk-3-dev and libwebkit2gtk-4.1-dev
+```
+
+`go test ./...` at the top runs the tests.
+
+<details>
+<summary>How it fits together</summary>
 
 - `internal/factorio` finds the game, lists its mods and runs it in a scratch folder.
 - `internal/pack` makes the export, reads pictures under the rules above, and talks to the planner.
 - `cmd/factory-pack` is the command line, with no dependencies past Go's own.
 - `app` is the window: a [Wails](https://wails.io) app in a module of its own, with a page of plain HTML and JavaScript and no build step.
 
-The planner takes a pack in three steps. `POST /api/packs` takes the export, a gzipped tar, and answers with the pack's code, a token, and the pictures it wants. `POST /api/packs/{code}/pictures` takes them in batches, as plain tars, with the token. `POST /api/packs/{code}/build` starts the build, and `GET /api/packs/{code}` says how it stands.
+The planner takes a pack in three steps. `POST /api/packs` takes the export, a gzipped tar, and answers with the pack's code, a token and the pictures it wants. `POST /api/packs/{code}/pictures` takes those in batches, with the token. `POST /api/packs/{code}/build` starts the build, and `GET /api/packs/{code}` says how it's going.
 
-## Building it
-
-The command line, from anywhere, for anywhere:
-
-```
-go build ./cmd/factory-pack
-GOOS=windows go build ./cmd/factory-pack
-```
-
-The app has to be built on the system it's for, Windows aside:
-
-```
-cd app
-go build -tags gtk3,production .                                    # Linux, with libgtk-3-dev and libwebkit2gtk-4.1-dev
-go build -tags production .                                         # macOS
-GOOS=windows go build -tags production -ldflags "-H windowsgui" .   # Windows, from anywhere
-```
-
-`go test ./...` at the top tests the tool. The workflows in `.github/workflows` build and release it, and sign and notarise the Mac build when the `MACOS_*` and `APPLE_*` secrets are set.
+</details>
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The app carries the [Figtree](https://github.com/erikdkennedy/figtree) and [Inter](https://rsms.me/inter/) fonts under the SIL Open Font License, and icons from [Lucide](https://lucide.dev) under the ISC licence. Factorio is a game by Wube Software; this isn't made by or connected with them.

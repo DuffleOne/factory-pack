@@ -1,0 +1,35 @@
+/* The design system's fonts, carried with the app so nothing is fetched:
+   Figtree for everything, Inter for the name. Both are under the SIL Open
+   Font License, beside them in fonts/. */
+
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("fonts/figtree-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url("fonts/figtree-latin-500-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("fonts/figtree-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: block;
+  src: url("fonts/inter-latin-600-normal.woff2") format("woff2");
+}

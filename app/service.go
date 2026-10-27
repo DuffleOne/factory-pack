@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -41,6 +43,13 @@ type State struct {
 	Version string   `json:"version"`
 	// ConfigPath is where the settings are kept.
 	ConfigPath string `json:"configPath"`
+	// OS is the system, as Go names it, and Home the player's home folder,
+	// for showing paths short.
+	OS   string `json:"os"`
+	Home string `json:"home"`
+	// Where is the game as the player knows it: on a Mac, the app rather
+	// than the program inside it.
+	Where string `json:"where,omitempty"`
 }
 
 // Load reads the saved settings and looks for the game with them.
@@ -56,7 +65,8 @@ func (s *Service) Load() State {
 // Look finds the game and its mods with the settings given, as they stand
 // in the window, without saving them.
 func (s *Service) Look(c config.Config) State {
-	st := State{Config: &c, Mods: []factorio.Mod{}, Picked: []string{}, Version: version, ConfigPath: s.path}
+	home, _ := os.UserHomeDir()
+	st := State{Config: &c, Mods: []factorio.Mod{}, Picked: []string{}, Version: version, ConfigPath: s.path, OS: runtime.GOOS, Home: home}
 
 	in, all, err := pack.Mods(&c)
 	if err != nil {
@@ -65,6 +75,11 @@ func (s *Service) Look(c config.Config) State {
 	}
 
 	st.Game, st.Mods = in, all
+
+	st.Where = in.Binary
+	if app, _, ok := strings.Cut(in.Binary, ".app/Contents/MacOS/"); ok {
+		st.Where = app + ".app"
+	}
 
 	names := c.Mods
 	if len(names) == 0 {

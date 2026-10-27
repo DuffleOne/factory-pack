@@ -61,7 +61,7 @@ func (j *Job) Run(ctx context.Context, progress func(Step)) (*Done, error) {
 	if in.Headless {
 		// It has no pictures, and the pack would have no art. Still worth
 		// making, but worth saying.
-		progress(Step{Stage: "this is the headless game, with no pictures: the pack will have none"})
+		progress(Step{Key: "note", Stage: "this is the headless game, with no pictures: the pack will have none"})
 	}
 
 	names := c.Mods

@@ -4,132 +4,176 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Factory Pack</title>
+    <link rel="stylesheet" href="/fonts.css" />
+    <link rel="stylesheet" href="/duffle/tokens.css" />
+    <link rel="stylesheet" href="/duffle/components.css" />
     <link rel="stylesheet" href="/style.css" />
     <script type="module" src="/app.js"></script>
   </head>
   <body>
-    <main>
-      <header>
-        <h1>Factory Pack</h1>
+    <main id="page">
+      <header class="intro">
+        <h1 class="logo">factory pack</h1>
         <p class="lede">
-          makes a mod pack for the factory planner out of your own Factorio.
-          it runs the game in a folder of its own, has it write out its data,
-          and sends that and the pictures the planner asks for. no mods, and
-          nothing else of yours, leave this machine.
+          makes a mod pack for the factory planner out of your own Factorio. it
+          runs the game in a folder of its own and sends what it writes out,
+          plus the pictures the planner asks for. no mods, and nothing else of
+          yours, leave this machine.
         </p>
       </header>
 
-      <section aria-labelledby="game-title">
-        <h2 id="game-title">your game</h2>
-        <p id="game" class="found">looking for Factorio…</p>
-        <details id="where">
-          <summary>it's somewhere else</summary>
-          <div class="fields">
-            <label for="binary">the game's executable</label>
+      <section id="setup" class="view" aria-label="what goes in your pack">
+        <div class="group">
+          <p class="label">your game</p>
+          <div class="game" id="game">
+            <span class="status silent" id="game-status"></span>
+            <div class="game-text">
+              <b id="game-name">looking for Factorio…</b>
+              <span id="game-where" class="muted"></span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="elsewhere">it's somewhere else</button>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="mods-head">
+            <h2 class="heading">mods</h2>
+            <span id="count" class="small"></span>
+          </div>
+          <div class="mods-tools">
+            <label class="search">
+              <span data-icon="search"></span>
+              <input id="filter" type="search" placeholder="find a mod" spellcheck="false" aria-label="find a mod" />
+            </label>
+            <div class="segmented" role="group" aria-label="tick">
+              <button type="button" data-set="game" aria-pressed="false">as in the game</button>
+              <button type="button" data-set="all" aria-pressed="false">all</button>
+              <button type="button" data-set="none" aria-pressed="false">none</button>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="from-list" data-icon="file">from a mod-list.json</button>
+          </div>
+          <div class="mods" id="mods" role="group" aria-label="mods to load"></div>
+          <p id="mods-note" class="mods-note small" role="status" hidden></p>
+        </div>
+
+        <details id="more" class="more">
+          <summary>
+            <span class="chev" data-icon="chevron"></span>
+            <b>more</b>
+            <span id="more-says" class="muted"></span>
+          </summary>
+
+          <div class="form" id="where">
+            <h3>where the game is</h3>
+            <label for="binary">the game itself</label>
             <div class="pick">
               <input id="binary" data-key="binary" placeholder="found by itself" spellcheck="false" />
-              <button type="button" data-browse="game">browse…</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="game">browse…</button>
             </div>
-            <label for="data">its data folder, with base and core in it</label>
+            <label for="data">its data folder</label>
             <div class="pick">
               <input id="data" data-key="data" placeholder="found by itself" spellcheck="false" />
-              <button type="button" data-browse="data">browse…</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="data">browse…</button>
             </div>
-            <label for="user">the folder with your mods and saves</label>
+            <label for="user">your mods and saves</label>
             <div class="pick">
               <input id="user" data-key="user" placeholder="found by itself" spellcheck="false" />
-              <button type="button" data-browse="user">browse…</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="user">browse…</button>
             </div>
-            <div class="row">
-              <button type="button" id="look">look again</button>
+            <span></span>
+            <div>
+              <button type="button" class="btn btn-secondary btn-sm" id="look" data-icon="refresh">look again</button>
             </div>
+
+            <h3>the pack</h3>
+            <label for="name">what to call it in the planner</label>
+            <input id="name" data-key="name" placeholder="named after its code" />
+            <span class="label-like">mod settings</span>
+            <div class="radios" role="radiogroup" aria-label="mod settings">
+              <label class="radio"><input type="radio" name="settings" value="mine" checked /> mine</label>
+              <label class="radio"><input type="radio" name="settings" value="defaults" /> every mod's defaults</label>
+              <label class="radio"><input type="radio" name="settings" value="file" /> from a file</label>
+            </div>
+            <span class="settings-file" hidden></span>
+            <div class="pick settings-file" hidden>
+              <input id="settings" placeholder="a mod-settings.dat, a server's say" spellcheck="false" aria-label="mod settings file" />
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="settings">browse…</button>
+            </div>
+            <label for="locale">names in</label>
+            <input id="locale" data-key="locale" placeholder="the game's own language, or en, de, fr, pt-BR…" spellcheck="false" />
+            <label for="server">the planner</label>
+            <input id="server" data-key="server" placeholder="https://factory.duffle.one" spellcheck="false" />
+            <label for="keep">keep a copy of what's sent in</label>
+            <div class="pick">
+              <input id="keep" data-key="keep" placeholder="nowhere" spellcheck="false" />
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="keep">browse…</button>
+            </div>
+            <label for="work">run the game in</label>
+            <div class="pick">
+              <input id="work" data-key="work" placeholder="the system's temporary folder" spellcheck="false" />
+              <button type="button" class="btn btn-secondary btn-sm" data-browse="work">browse…</button>
+            </div>
+            <label for="timeout">longest one run may take</label>
+            <div><input id="timeout" data-key="timeout" class="short" placeholder="15m" spellcheck="false" /></div>
           </div>
+          <p class="kept small" data-icon="info">settings are kept in <span id="config-path"></span></p>
         </details>
       </section>
 
-      <section aria-labelledby="mods-title">
-        <div class="head">
-          <h2 id="mods-title">mods</h2>
-          <span id="count" class="muted"></span>
+      <section id="making" class="view" aria-label="making your pack" hidden>
+        <h2 class="title">making your pack</h2>
+        <p id="making-what" class="muted"></p>
+        <p id="note" class="banner warn" hidden></p>
+        <ol class="steps" id="steps" aria-live="polite"></ol>
+        <div id="failed" class="failed" role="alert" hidden>
+          <span data-icon="alert"></span>
+          <p id="failed-why"></p>
         </div>
-        <div class="row tools">
-          <input id="filter" type="search" placeholder="find a mod" spellcheck="false" />
-          <button type="button" data-set="game">as in the game</button>
-          <button type="button" data-set="all">all</button>
-          <button type="button" data-set="none">none</button>
-          <button type="button" id="from-list">as a mod-list.json has them…</button>
-        </div>
-        <ul id="mods" class="mods" aria-label="mods to load"></ul>
-        <label class="check">
-          <input type="checkbox" id="exact" data-key="exact" />
-          only these: don't bring in what they need
-        </label>
       </section>
 
-      <details id="more">
-        <summary>more</summary>
-        <div class="fields">
-          <label for="name">what to call it in the planner</label>
-          <input id="name" data-key="name" placeholder="named after its mods" />
-
-          <span class="label">mod settings</span>
-          <div class="row" role="radiogroup" aria-label="mod settings">
-            <label class="check"><input type="radio" name="settings" value="mine" checked /> mine</label>
-            <label class="check"><input type="radio" name="settings" value="defaults" /> every mod's defaults</label>
-            <label class="check"><input type="radio" name="settings" value="file" /> from a file</label>
-          </div>
-          <div class="pick" id="settings-file" hidden>
-            <input id="settings" placeholder="a mod-settings.dat, a server's say" spellcheck="false" />
-            <button type="button" data-browse="settings">browse…</button>
-          </div>
-
-          <label for="locale">names in</label>
-          <input id="locale" data-key="locale" placeholder="the game's own language, or en, de, fr, pt-BR…" spellcheck="false" />
-
-          <label for="server">the planner</label>
-          <input id="server" data-key="server" placeholder="https://factory.duffle.one" spellcheck="false" />
-
-          <label for="keep">keep a copy of everything sent in</label>
-          <div class="pick">
-            <input id="keep" data-key="keep" placeholder="nowhere" spellcheck="false" />
-            <button type="button" data-browse="keep">browse…</button>
-          </div>
-
-          <label for="work">run the game in</label>
-          <div class="pick">
-            <input id="work" data-key="work" placeholder="the system's temporary folder" spellcheck="false" />
-            <button type="button" data-browse="work">browse…</button>
-          </div>
-
-          <label for="timeout">longest one run of the game may take</label>
-          <input id="timeout" data-key="timeout" placeholder="15m" spellcheck="false" />
-
-          <p class="muted small">settings are kept in <span id="config-path"></span></p>
-        </div>
-      </details>
-
-      <div class="go">
-        <button type="button" id="make" class="primary">make my pack</button>
-        <button type="button" id="stop" hidden>stop</button>
-      </div>
-
-      <ol id="steps" class="steps" aria-live="polite"></ol>
-      <p id="problem" class="problem" role="alert" hidden></p>
-
-      <section id="done" class="done" hidden aria-labelledby="code-title">
-        <h2 id="code-title">your pack's code</h2>
-        <p id="code" class="code"></p>
-        <div class="row">
-          <button type="button" id="copy">copy it</button>
-          <button type="button" id="open" class="primary">open the planner with it</button>
-        </div>
+      <section id="done" class="view" aria-label="your pack" hidden>
+        <p class="code-label" data-icon="check">your pack's code</p>
+        <p class="code" id="code"></p>
         <p id="sent" class="muted"></p>
-        <p class="muted">
-          in the planner, pick "my own mod pack" in the game data menu and type
-          it in. it's kept for 48 hours after it was last used, and planning
-          with it counts. the same mods and settings always get the same code.
-        </p>
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="open" data-icon="out" data-icon-after="1">open the planner with it</button>
+          <button type="button" class="btn btn-secondary" id="copy" data-icon="copy">copy it</button>
+        </div>
+        <hr />
+        <h3>using it</h3>
+        <ol class="using">
+          <li>in the planner, open the game data menu and pick "my own mod pack"</li>
+          <li>type the code in</li>
+          <li class="muted">it's kept for 48 hours after it was last used, and planning with it counts. the same mods and settings always get the same code</li>
+        </ol>
+        <details class="went">
+          <summary>
+            <span class="chev" data-icon="chevron"></span>
+            <b>how it went</b>
+            <span id="went-says" class="muted"></span>
+          </summary>
+          <ol class="steps" id="went"></ol>
+        </details>
       </section>
     </main>
+
+    <footer class="bar">
+      <div class="bar-row" id="bar-setup">
+        <label class="check"><input type="checkbox" id="exact" data-key="exact" /> only these: don't bring in what they need</label>
+        <button type="button" class="btn btn-primary" id="make" data-icon="right" data-icon-after="1">make my pack</button>
+      </div>
+      <div class="bar-row" id="bar-making" hidden>
+        <span class="muted">the game runs three times, so this takes a few minutes</span>
+        <button type="button" class="btn btn-secondary" id="stop" data-icon="stop">stop</button>
+      </div>
+      <div class="bar-row" id="bar-failed" hidden>
+        <button type="button" class="btn btn-ghost" data-back data-icon="left">back to the mods</button>
+        <button type="button" class="btn btn-primary" id="again" data-icon="refresh">try again</button>
+      </div>
+      <div class="bar-row" id="bar-done" hidden>
+        <button type="button" class="btn btn-ghost" data-back data-icon="left">back to the mods</button>
+        <span class="muted" id="kept-until"></span>
+      </div>
+    </footer>
   </body>
 </html>

@@ -150,14 +150,7 @@ usage: factory-pack [flags]
 	start := time.Now()
 	job := &pack.Job{Config: c, Tool: "factory-pack " + version, NoSend: *noSend}
 
-	done, err := job.Run(ctx, func(s pack.Step) {
-		if s.Of > 0 {
-			fmt.Printf("%s (%d of %d)\n", s.Stage, s.Done, s.Of)
-			return
-		}
-
-		fmt.Println(s.Stage)
-	})
+	done, err := job.Run(ctx, say())
 	if err != nil {
 		return err
 	}
@@ -238,6 +231,38 @@ func show(c *config.Config) error {
 	}
 
 	return nil
+}
+
+// say prints how a pack is coming along: a line as each step starts, and
+// for one with parts, another each tenth of the way.
+func say() func(pack.Step) {
+	var (
+		key   string
+		tenth int64 = -1
+	)
+
+	return func(s pack.Step) {
+		if s.Key == key && (s.Of <= 0 || s.Done*10/s.Of == tenth) {
+			return
+		}
+
+		key = s.Key
+
+		switch {
+		case s.Of <= 0:
+			tenth = -1
+
+			fmt.Println(s.Stage)
+		case s.Bytes:
+			tenth = s.Done * 10 / s.Of
+
+			fmt.Printf("%s: %s of %s\n", s.Stage, size(s.Done), size(s.Of))
+		default:
+			tenth = s.Done * 10 / s.Of
+
+			fmt.Printf("%s (%d of %d)\n", s.Stage, s.Done, s.Of)
+		}
+	}
 }
 
 func size(n int64) string {

@@ -31,13 +31,27 @@ func main() {
 		Mac:         application.MacOptions{ApplicationShouldTerminateAfterLastWindowClosed: true},
 	})
 
+	// The page's own colour from the start, so the window doesn't flash
+	// white on its way to dark.
+	background := application.NewRGB(0xff, 0xff, 0xff)
+	if app.Env.IsDarkMode() {
+		background = application.NewRGB(0x16, 0x1c, 0x26)
+	}
+
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
-		Title:     "Factory Pack",
-		Width:     780,
-		Height:    820,
-		MinWidth:  560,
-		MinHeight: 560,
-		URL:       "/",
+		Title:            "Factory Pack",
+		Width:            760,
+		Height:           940,
+		MinWidth:         600,
+		MinHeight:        640,
+		URL:              "/",
+		BackgroundColour: background,
+		// On a Mac the page runs up under the traffic lights, which leaves
+		// room for them.
+		Mac: application.MacWindow{
+			TitleBar:                application.MacTitleBarHiddenInset,
+			InvisibleTitleBarHeight: 52,
+		},
 	})
 
 	if err := app.Run(); err != nil {
