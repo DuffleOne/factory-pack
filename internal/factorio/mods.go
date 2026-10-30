@@ -261,13 +261,14 @@ func (i *modInfo) mod(path string) Mod {
 }
 
 // required reads one of a mod's dependencies: the mod's name, and whether
-// it has to be loaded. "! x" is a mod it can't load beside, and "? x" and
-// "(?) x" ones it can do without; a bare name, or "~ x", is needed.
+// it has to be loaded. "! x" is a mod it can't load beside, and "? x",
+// "(?) x" and 2.1's "+ x" ones it can do without; a bare name, or "~ x",
+// is needed.
 func required(dep string) (string, bool) {
 	dep = strings.TrimSpace(dep)
 
 	switch {
-	case strings.HasPrefix(dep, "!"), strings.HasPrefix(dep, "?"), strings.HasPrefix(dep, "(?)"):
+	case strings.HasPrefix(dep, "!"), strings.HasPrefix(dep, "?"), strings.HasPrefix(dep, "(?)"), strings.HasPrefix(dep, "+"):
 		return "", false
 	case strings.HasPrefix(dep, "~"):
 		dep = strings.TrimSpace(dep[1:])

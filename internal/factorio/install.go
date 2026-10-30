@@ -24,7 +24,7 @@ type Install struct {
 	Binary string `json:"binary"`
 	Data   string `json:"data"`
 	User   string `json:"user"`
-	// Version is the game's, as "2.0.77", and Headless whether it's the
+	// Version is the game's, as "2.1.24", and Headless whether it's the
 	// build servers run, which has no pictures in it. Both are empty for a
 	// game that won't say.
 	Version  string `json:"version,omitempty"`
@@ -228,7 +228,7 @@ func systemFolders(root string) bool {
 
 // identify asks the game for its version and whether it's the headless
 // build. The first line it prints is
-// "Version: 2.0.77 (build 84539, linux64, headless)".
+// "Version: 2.1.24 (build 87808, linux64, headless)".
 func identify(bin string) (version string, headless bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()

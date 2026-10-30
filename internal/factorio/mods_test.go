@@ -52,10 +52,13 @@ func install(t *testing.T) *Install {
 	root := t.TempDir()
 	in := &Install{Data: filepath.Join(root, "data"), User: filepath.Join(root, "user")}
 
-	put(t, filepath.Join(in.Data, "base", "info.json"), `{"name":"base","version":"2.0.77","title":"Base Mod"}`)
-	put(t, filepath.Join(in.Data, "core", "info.json"), `{"name":"core","version":"2.0.77"}`)
-	put(t, filepath.Join(in.Data, "space-age", "info.json"), `{"name":"space-age","version":"2.0.77","dependencies":["base","quality"]}`)
-	put(t, filepath.Join(in.Data, "quality", "info.json"), `{"name":"quality","version":"2.0.77"}`)
+	// As 2.1 ships them: Space Age only recommends quality, and both need
+	// the recycler.
+	put(t, filepath.Join(in.Data, "base", "info.json"), `{"name":"base","version":"2.1.24","title":"Base Mod"}`)
+	put(t, filepath.Join(in.Data, "core", "info.json"), `{"name":"core","version":"2.1.24"}`)
+	put(t, filepath.Join(in.Data, "space-age", "info.json"), `{"name":"space-age","version":"2.1.24","dependencies":["base >= 2.1.0","+ quality >= 2.1.0","recycler >= 2.1.0"]}`)
+	put(t, filepath.Join(in.Data, "quality", "info.json"), `{"name":"quality","version":"2.1.24","dependencies":["base >= 2.1.0","recycler >= 2.1.0"]}`)
+	put(t, filepath.Join(in.Data, "recycler", "info.json"), `{"name":"recycler","version":"2.1.24"}`)
 
 	mods := filepath.Join(in.User, "mods")
 	if err := os.MkdirAll(mods, 0o755); err != nil {
@@ -90,9 +93,10 @@ func TestMods(t *testing.T) {
 		got = append(got, on+m.Name+"@"+m.Version)
 	}
 	// Base first, then what ships with the game, then the player's, the
-	// newest of each. Space Age isn't named in the list, so it's on;
+	// newest of each. Space Age and the recycler aren't named in the list,
+	// so they're on;
 	// quality is named off.
-	want := []string{"xbase@2.0.77", " quality@2.0.77", "xspace-age@2.0.77", "xbig-mod@1.10.0", " dev-mod@0.0.1", "xlib-mod@0.6.1"}
+	want := []string{"xbase@2.1.24", " quality@2.1.24", "xrecycler@2.1.24", "xspace-age@2.1.24", "xbig-mod@1.10.0", " dev-mod@0.0.1", "xlib-mod@0.6.1"}
 	if !slices.Equal(got, want) {
 		t.Errorf("got %v\nwant %v", got, want)
 	}
@@ -135,7 +139,7 @@ func TestPick(t *testing.T) {
 		t.Error("a mod that isn't there was picked")
 	}
 
-	if got := names(must(Pick(all, Switched(all), true))); !slices.Equal(got, []string{"base", "quality", "space-age", "big-mod", "lib-mod"}) {
+	if got := names(must(Pick(all, Switched(all), true))); !slices.Equal(got, []string{"base", "recycler", "space-age", "big-mod", "lib-mod"}) {
 		t.Errorf("as the game has them: %v", got)
 	}
 }
@@ -192,6 +196,7 @@ func TestRequired(t *testing.T) {
 		"? optional":           "",
 		"! incompatible":       "",
 		"(?) hidden":           "",
+		"+ quality >= 2.1.0":   "",
 		"  spaced  >  1 ":      "spaced",
 		"Flare Stack":          "Flare Stack",
 		"Flare Stack >= 4.1.0": "Flare Stack",
